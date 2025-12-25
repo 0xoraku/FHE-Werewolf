@@ -1,50 +1,199 @@
+/* === Layout === */
 #root {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 2rem;
-  text-align: left;
+  padding: 3rem 1.5rem;
 }
 
 .container {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
+  max-width: 720px;
+  margin: 0 auto;
 }
 
+/* === Header === */
+.header {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.header h1 {
+  font-size: 2.5rem;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--color-accent) 0%, #a78bfa 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.header p {
+  margin: 0.5rem 0 0;
+  color: var(--color-text-muted);
+  font-size: 0.95rem;
+}
+
+/* === Sections (Cards) === */
 section {
-  padding: 1rem;
-  border: 1px solid currentColor;
-  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-elevated);
+  backdrop-filter: blur(8px);
+  transition: border-color var(--transition-base);
 }
 
+section:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+section > h2 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 1rem;
+}
+
+/* === Row / Form Layout === */
 .row {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
   align-items: end;
-  flex-wrap: wrap;
 }
 
 label {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  flex: 1;
+  min-width: 180px;
 }
 
-input {
-  padding: 0.6em 0.8em;
-  border-radius: 8px;
-  border: 1px solid currentColor;
-  background: transparent;
-  font: inherit;
+label input {
+  width: 100%;
 }
 
+.row > button {
+  height: 2.5rem;
+  white-space: nowrap;
+}
+
+/* === State Display === */
+.state-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 0.75rem;
+}
+
+.state-item {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+.state-item dt {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  margin-bottom: 0.25rem;
+}
+
+.state-item dd {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  font-family: var(--font-display);
+}
+
+.state-item dd.accent {
+  color: var(--color-accent);
+}
+
+/* === Mono / Code === */
 .mono {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
-    monospace;
-  font-size: 0.95em;
+  font-family: 'SF Mono', 'Fira Code', ui-monospace, monospace;
+  font-size: 0.8rem;
+  line-height: 1.5;
   word-break: break-all;
+  color: var(--color-text-muted);
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: var(--radius-sm);
+  margin-top: 0.75rem;
 }
 
-.error {
+/* === Status Messages === */
+.status {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-sm);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status.busy {
+  background: var(--color-accent-subtle);
+  color: var(--color-accent);
+  border: 1px solid var(--color-accent);
+}
+
+.status.busy::before {
+  content: '';
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 2px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.status.error {
+  background: rgba(248, 113, 113, 0.1);
+  color: var(--color-danger);
+  border: 1px solid var(--color-danger);
   word-break: break-word;
+}
+
+/* === Responsive === */
+@media (max-width: 600px) {
+  #root {
+    padding: 1.5rem 1rem;
+  }
+
+  .header h1 {
+    font-size: 1.8rem;
+  }
+
+  section {
+    padding: 1rem;
+  }
+
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .row > button {
+    width: 100%;
+  }
+
+  label {
+    min-width: 100%;
+  }
 }

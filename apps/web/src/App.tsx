@@ -28,6 +28,24 @@ type Status = {
   myPlayerId?: number
 }
 
+const SEPOLIA_CHAIN_ID = 11155111
+
+function formatEthersError(error: unknown): string {
+  const anyErr = error as any
+  const msg =
+    anyErr?.shortMessage ??
+    anyErr?.reason ??
+    anyErr?.info?.error?.message ??
+    anyErr?.data?.message ??
+    anyErr?.message ??
+    String(error)
+
+  if (typeof msg === 'string') {
+    return msg.replace(/^execution reverted:\s*/i, '').trim()
+  }
+  return String(msg)
+}
+
 function App() {
   const [contractAddress, setContractAddress] = useState<string>(import.meta.env.VITE_WEREWOLF_ADDRESS ?? '')
   const [walletAddress, setWalletAddress] = useState<string>('')
@@ -130,16 +148,63 @@ function App() {
       const c = new Contract(contractAddress, FHEWerewolfAbi, p)
       await readStatus(c)
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(formatEthersError(e))
     } finally {
       setBusy('')
     }
   }, [contractAddress, readStatus])
 
+  const switchToSepolia = useCallback(async () => {
+    setError('')
+    if (!window.ethereum) {
+      setError('window.ethereum が見つかりません（MetaMask等が必要です）')
+      return
+    }
+    setBusy('switchNetwork')
+    try {
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0xaa36a7' }],
+      })
+    } catch (e: any) {
+      // 4902 = chain not added
+      if (e?.code === 4902) {
+        await window.ethereum.request({
+          method: 'wallet_addEthereumChain',
+          params: [
+            {
+              chainId: '0xaa36a7',
+              chainName: 'Sepolia',
+              nativeCurrency: { name: 'SepoliaETH', symbol: 'SEP', decimals: 18 },
+              rpcUrls: ['https://rpc.sepolia.org'],
+              blockExplorerUrls: ['https://sepolia.etherscan.io'],
+            },
+          ],
+        })
+      } else {
+        throw e
+      }
+    } finally {
+      try {
+        if (window.ethereum) {
+          const p = new BrowserProvider(window.ethereum as any)
+          const net = await p.getNetwork()
+          setChainId(Number(net.chainId))
+        }
+      } catch {
+        // ignore
+      }
+      setBusy('')
+    }
+  }, [])
+
   const requireReady = useCallback(() => {
     if (!provider) throw new Error('未接続です（Connectを押してください）')
     if (!contractAddress) throw new Error('コントラクトアドレスが空です')
     if (!instance) throw new Error('Relayer SDK が未初期化です')
+    if (chainId !== null && chainId !== SEPOLIA_CHAIN_ID) {
+      throw new Error(`Sepolia(${SEPOLIA_CHAIN_ID}) に切り替えてください（現在: ${chainId}）`)
+    }
   }, [provider, contractAddress, instance])
 
   const join = useCallback(async () => {
@@ -153,7 +218,7 @@ function App() {
       await tx.wait()
       await refreshStatus()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(formatEthersError(e))
     } finally {
       setBusy('')
     }
@@ -196,7 +261,7 @@ function App() {
       if (typeof decrypted !== 'boolean') throw new Error('role の復号結果が想定外です')
       setRoleText(decrypted ? 'Werewolf' : 'Villager')
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(formatEthersError(e))
     } finally {
       setBusy('')
     }
@@ -222,7 +287,7 @@ function App() {
       await tx.wait()
       await refreshStatus()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(formatEthersError(e))
     } finally {
       setBusy('')
     }
@@ -264,7 +329,7 @@ function App() {
       parseReceiptForHandles(receipt)
       await refreshStatus()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(formatEthersError(e))
     } finally {
       setBusy('')
     }
@@ -288,7 +353,7 @@ function App() {
       parseReceiptForHandles(receipt)
       await refreshStatus()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(formatEthersError(e))
     } finally {
       setBusy('')
     }
@@ -317,20 +382,23 @@ function App() {
       await tx.wait()
       await refreshStatus()
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e))
+      setError(formatEthersError(e))
     } finally {
       setBusy('')
     }
   }, [contractWithSigner, instance, lastEliminatedIndexHandle, lastVillagersWinHandle, refreshStatus, requireReady])
 
-  const sepoliaOk = chainId === null ? null : chainId === 11155111
+  const sepoliaOk = chainId === null ? null : chainId === SEPOLIA_CHAIN_ID
 
   return (
     <div className="container">
-      <h1>FHE Werewolf (MVP)</h1>
+      <header className="header">
+        <h1>FHE Werewolf</h1>
+        <p>Trustless social deduction powered by Fully Homomorphic Encryption</p>
+      </header>
 
       <section>
-        <h2>Config</h2>
+        <h2>Connection</h2>
         <div className="row">
           <label>
             Contract Address
@@ -344,39 +412,66 @@ function App() {
           <button onClick={connect} disabled={busy !== ''}>
             Connect
           </button>
-          <button onClick={refreshStatus} disabled={!contract || busy !== ''}>
+          <button className="ghost" onClick={switchToSepolia} disabled={busy !== ''}>
+            Switch to Sepolia
+          </button>
+          <button className="ghost" onClick={refreshStatus} disabled={!contract || busy !== ''}>
             Refresh
           </button>
         </div>
         <div className="mono">
-          wallet: {walletAddress || '(not connected)'}
-          <br />
-          chainId: {chainId ?? '(unknown)'} {sepoliaOk === false ? '(Sepolia以外)' : ''}
+          {walletAddress ? (
+            <>
+              <strong>Wallet:</strong> {walletAddress.slice(0, 6)}...{walletAddress.slice(-4)}
+              {' · '}
+              <strong>Chain:</strong> {chainId}
+              {sepoliaOk === false && ' (Not Sepolia)'}
+            </>
+          ) : (
+            'Not connected'
+          )}
         </div>
       </section>
 
       <section>
-        <h2>State</h2>
-        <div className="mono">
-          phase: {status.phase ?? '(?)'} {status.phase !== undefined ? `(${PhaseLabel[status.phase] ?? 'Unknown'})` : ''}
-          <br />
-          voteRound: {status.voteRound ?? '(?)'}
-          <br />
-          myPlayerId: {status.myPlayerId ?? '(not joined)'}
-          <br />
-          gameEnded: {String(status.gameEnded ?? false)}
-          <br />
-          eliminatedPlayer: {status.eliminatedPlayer ?? '(?)'}
-          <br />
-          villagersWin: {status.villagersWin === undefined ? '(?)' : String(status.villagersWin)}
-        </div>
+        <h2>Game State</h2>
+        <dl className="state-grid">
+          <div className="state-item">
+            <dt>Phase</dt>
+            <dd className="accent">
+              {status.phase !== undefined ? PhaseLabel[status.phase] ?? 'Unknown' : '—'}
+            </dd>
+          </div>
+          <div className="state-item">
+            <dt>Vote Round</dt>
+            <dd>{status.voteRound ?? '—'}</dd>
+          </div>
+          <div className="state-item">
+            <dt>My Player ID</dt>
+            <dd>{status.myPlayerId !== undefined ? status.myPlayerId : '—'}</dd>
+          </div>
+          <div className="state-item">
+            <dt>Eliminated</dt>
+            <dd>{status.gameEnded ? status.eliminatedPlayer : '—'}</dd>
+          </div>
+          <div className="state-item">
+            <dt>Winner</dt>
+            <dd className={status.gameEnded ? 'accent' : ''}>
+              {status.gameEnded
+                ? status.villagersWin
+                  ? '🏠 Villagers'
+                  : '🐺 Werewolf'
+                : '—'}
+            </dd>
+          </div>
+        </dl>
       </section>
 
       <section>
-        <h2>Join</h2>
+        <h2>Join Game</h2>
         <div className="row">
           <label>
-            playerId (0-4)
+            Player ID (0–4)
             <input
               type="number"
               min={0}
@@ -392,20 +487,24 @@ function App() {
       </section>
 
       <section>
-        <h2>Role (userDecrypt)</h2>
+        <h2>Your Role</h2>
         <div className="row">
           <button onClick={fetchRole} disabled={busy !== ''}>
-            Get My Role
+            Decrypt Role
           </button>
-          <div className="mono">{roleText ? `role: ${roleText}` : 'role: (not fetched)'}</div>
+          {roleText && (
+            <span style={{ fontSize: '1.25rem', fontWeight: 600 }}>
+              {roleText === 'Werewolf' ? '🐺 Werewolf' : '🏠 Villager'}
+            </span>
+          )}
         </div>
       </section>
 
       <section>
-        <h2>Vote (encrypted)</h2>
+        <h2>Vote</h2>
         <div className="row">
           <label>
-            vote target (0-4)
+            Target Player (0–4)
             <input
               type="number"
               min={0}
@@ -415,37 +514,52 @@ function App() {
             />
           </label>
           <button onClick={submitVote} disabled={busy !== ''}>
-            Submit Vote
+            Submit Encrypted Vote
           </button>
         </div>
       </section>
 
       <section>
-        <h2>Finalize / Reveal</h2>
+        <h2>Finalize & Reveal</h2>
         <div className="row">
           <button onClick={finalize} disabled={busy !== ''}>
             Finalize
           </button>
-          <button onClick={revealTie} disabled={busy !== ''}>
+          <button className="ghost" onClick={revealTie} disabled={busy !== ''}>
             Reveal Tie
           </button>
-          <button onClick={revealResult} disabled={busy !== ''}>
+          <button className="ghost" onClick={revealResult} disabled={busy !== ''}>
             Reveal Result
           </button>
         </div>
-
-        <div className="mono">
-          isTieHandle: {lastIsTieHandle || '(none)'}
-          <br />
-          eliminatedIndexHandle: {lastEliminatedIndexHandle || '(none)'}
-          <br />
-          villagersWinHandle: {lastVillagersWinHandle || '(none)'}
-        </div>
+        {(lastIsTieHandle || lastEliminatedIndexHandle) && (
+          <div className="mono">
+            {lastIsTieHandle && (
+              <>
+                <strong>isTieHandle:</strong> {lastIsTieHandle.slice(0, 10)}...
+                <br />
+              </>
+            )}
+            {lastEliminatedIndexHandle && (
+              <>
+                <strong>eliminatedHandle:</strong> {lastEliminatedIndexHandle.slice(0, 10)}...
+                <br />
+              </>
+            )}
+            {lastVillagersWinHandle && (
+              <>
+                <strong>winHandle:</strong> {lastVillagersWinHandle.slice(0, 10)}...
+              </>
+            )}
+          </div>
+        )}
       </section>
 
-      {busy ? <p className="mono">busy: {busy}</p> : null}
-      {error ? <p className="error">error: {error}</p> : null}
-      {!window.ethereum ? <p className="error">MetaMask等のウォレット拡張が必要です。</p> : null}
+      {busy && <div className="status busy">{busy}...</div>}
+      {error && <div className="status error">{error}</div>}
+      {!window.ethereum && (
+        <div className="status error">MetaMask or another Web3 wallet is required.</div>
+      )}
     </div>
   )
 }
