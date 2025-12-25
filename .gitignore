@@ -14,7 +14,8 @@ node_modules
 types
 deployments
 tmp
-## docs should be tracked for submission
+
+/docs/
 
 # Reference docs (copied vendor docs / large) should not be committed
 docs/refs/

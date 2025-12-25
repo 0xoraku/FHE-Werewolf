@@ -1,64 +1,42 @@
 # FHE Werewolf
 
-Sepolia 上で動く、FHE（Fully Homomorphic Encryption）を使った Werewolf（人狼）デモ dApp。
+A minimal on-chain Werewolf (Mafia) game where **roles and votes stay private**.
+Even the deployer/operator cannot see players’ roles or individual votes.
 
-- Smart Contract: `contracts/FHEWerewolf.sol`
-- Web UI: `apps/web`
+- Smart contract: `contracts/FHEWerewolf.sol`
+- Web UI (Vite + React): `apps/web`
 
-## 必要要件
+This dApp runs on **Sepolia** and uses **FHE (Fully Homomorphic Encryption)** via the FHEVM stack.
+
+## What is private vs public
+
+- Encrypted (never revealed): player roles, individual votes, vote tallies
+- Public (revealed at the end): eliminated player, winning side
+
+## Architecture (no backend)
+
+Browser (MetaMask)
+→ encrypt inputs + request decryptions via Relayer SDK
+→ FHE Werewolf smart contract (encrypted computation)
+→ only the final outcome is revealed on-chain
+
+## Game rules (MVP)
+
+- Players: 5 (fixed)
+- Roles: 1 werewolf, 4 villagers (assigned privately)
+- Flow:
+	1. Join (playerId 0–4)
+	2. Vote Round 1 (encrypted)
+	3. Finalize round 1
+	4. If tie → Vote Round 2 (encrypted)
+	5. Reveal final result (public)
+
+## Requirements
 
 - Node.js 20+
-- MetaMask（Sepolia）
+- MetaMask
+- Sepolia ETH for transactions
 
-## セットアップ
 
-```bash
-npm install
-```
 
-## Sepolia へデプロイ（Hardhat vars）
 
-このリポジトリは Hardhat の `vars` を使います。
-
-```bash
-npx hardhat vars set MNEMONIC
-npx hardhat vars set INFURA_API_KEY
-
-# optional: verify
-npx hardhat vars set ETHERSCAN_API_KEY
-```
-
-```bash
-npm run compile
-npx hardhat deploy --network sepolia --tags FHEWerewolf
-```
-
-（任意）verify
-
-```bash
-npx hardhat verify --network sepolia <CONTRACT_ADDRESS>
-```
-
-## Web UI（ローカル）
-
-`apps/web/.env.local` を作ってコントラクトアドレスを入れます。
-
-```bash
-cd apps/web
-cp .env.example .env.local
-# VITE_WEREWOLF_ADDRESS を <CONTRACT_ADDRESS> に更新
-npm i
-npm run dev
-```
-
-## Vercel
-
-- Vercel の Environment Variables に `VITE_WEREWOLF_ADDRESS=<CONTRACT_ADDRESS>` を追加
-
-## Sepolia E2E 手順（審査用）
-
-- [docs/sepolia-e2e.md](docs/sepolia-e2e.md)
-
-## Tech
-
-- FHEVM Solidity library + Hardhat plugin
