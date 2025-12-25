@@ -14,11 +14,17 @@ node_modules
 types
 deployments
 tmp
-/docs/
+## docs should be tracked for submission
+
+# Reference docs (copied vendor docs / large) should not be committed
+docs/refs/
 
 
 # files
-*.env
+.env
+.env.*
+!.env.example
+!.env.*.example
 *.log
 .DS_Store
 .pnp.*

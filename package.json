@@ -1,20 +1,14 @@
 {
-  "name": "fhevm-hardhat-template",
-  "description": "Hardhat-based template for developing FHEVM Solidity smart contracts",
+  "name": "fhe-werewolf",
+  "description": "Sepolia dApp demo: FHE Werewolf (smart contract + web UI)",
   "version": "0.3.0-3",
   "engines": {
     "node": ">=20",
     "npm": ">=7.0.0"
   },
   "license": "BSD-3-Clause-Clear",
-  "homepage": "https://github.com/zama-ai/fhevm-hardhat-template/README.md",
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/zama-ai/fhevm-hardhat-template.git"
-  },
   "keywords": [
     "fhevm",
-    "zama",
     "eth",
     "ethereum",
     "dapps",
@@ -44,6 +38,7 @@
     "chai": "^4.5.0",
     "chai-as-promised": "^8.0.1",
     "cross-env": "^7.0.3",
+    "dotenv": "^16.6.1",
     "eslint": "^8.57.1",
     "eslint-config-prettier": "^9.1.0",
     "ethers": "^6.15.0",

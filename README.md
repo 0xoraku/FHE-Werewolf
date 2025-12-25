@@ -1,110 +1,64 @@
-# FHEVM Hardhat Template
+# FHE Werewolf
 
-A Hardhat-based template for developing Fully Homomorphic Encryption (FHE) enabled Solidity smart contracts using the
-FHEVM protocol by Zama.
+Sepolia 上で動く、FHE（Fully Homomorphic Encryption）を使った Werewolf（人狼）デモ dApp。
 
-## Quick Start
+- Smart Contract: `contracts/FHEWerewolf.sol`
+- Web UI: `apps/web`
 
-For detailed instructions see:
-[FHEVM Hardhat Quick Start Tutorial](https://docs.zama.ai/protocol/solidity-guides/getting-started/quick-start-tutorial)
+## 必要要件
 
-### Prerequisites
+- Node.js 20+
+- MetaMask（Sepolia）
 
-- **Node.js**: Version 20 or higher
-- **npm or yarn/pnpm**: Package manager
+## セットアップ
 
-### Installation
-
-1. **Install dependencies**
-
-   ```bash
-   npm install
-   ```
-
-2. **Set up environment variables**
-
-   ```bash
-   npx hardhat vars set MNEMONIC
-
-   # Set your Infura API key for network access
-   npx hardhat vars set INFURA_API_KEY
-
-   # Optional: Set Etherscan API key for contract verification
-   npx hardhat vars set ETHERSCAN_API_KEY
-   ```
-
-3. **Compile and test**
-
-   ```bash
-   npm run compile
-   npm run test
-   ```
-
-4. **Deploy to local network**
-
-   ```bash
-   # Start a local FHEVM-ready node
-   npx hardhat node
-   # Deploy to local network
-   npx hardhat deploy --network localhost
-   ```
-
-5. **Deploy to Sepolia Testnet**
-
-   ```bash
-   # Deploy to Sepolia
-   npx hardhat deploy --network sepolia
-   # Verify contract on Etherscan
-   npx hardhat verify --network sepolia <CONTRACT_ADDRESS>
-   ```
-
-6. **Test on Sepolia Testnet**
-
-   ```bash
-   # Once deployed, you can run a simple test on Sepolia.
-   npx hardhat test --network sepolia
-   ```
-
-## 📁 Project Structure
-
-```
-fhevm-hardhat-template/
-├── contracts/           # Smart contract source files
-│   └── FHECounter.sol   # Example FHE counter contract
-├── deploy/              # Deployment scripts
-├── tasks/               # Hardhat custom tasks
-├── test/                # Test files
-├── hardhat.config.ts    # Hardhat configuration
-└── package.json         # Dependencies and scripts
+```bash
+npm install
 ```
 
-## 📜 Available Scripts
+## Sepolia へデプロイ（Hardhat vars）
 
-| Script             | Description              |
-| ------------------ | ------------------------ |
-| `npm run compile`  | Compile all contracts    |
-| `npm run test`     | Run all tests            |
-| `npm run coverage` | Generate coverage report |
-| `npm run lint`     | Run linting checks       |
-| `npm run clean`    | Clean build artifacts    |
+このリポジトリは Hardhat の `vars` を使います。
 
-## 📚 Documentation
+```bash
+npx hardhat vars set MNEMONIC
+npx hardhat vars set INFURA_API_KEY
 
-- [FHEVM Documentation](https://docs.zama.ai/fhevm)
-- [FHEVM Hardhat Setup Guide](https://docs.zama.ai/protocol/solidity-guides/getting-started/setup)
-- [FHEVM Testing Guide](https://docs.zama.ai/protocol/solidity-guides/development-guide/hardhat/write_test)
-- [FHEVM Hardhat Plugin](https://docs.zama.ai/protocol/solidity-guides/development-guide/hardhat)
+# optional: verify
+npx hardhat vars set ETHERSCAN_API_KEY
+```
 
-## 📄 License
+```bash
+npm run compile
+npx hardhat deploy --network sepolia --tags FHEWerewolf
+```
 
-This project is licensed under the BSD-3-Clause-Clear License. See the [LICENSE](LICENSE) file for details.
+（任意）verify
 
-## 🆘 Support
+```bash
+npx hardhat verify --network sepolia <CONTRACT_ADDRESS>
+```
 
-- **GitHub Issues**: [Report bugs or request features](https://github.com/zama-ai/fhevm/issues)
-- **Documentation**: [FHEVM Docs](https://docs.zama.ai)
-- **Community**: [Zama Discord](https://discord.gg/zama)
+## Web UI（ローカル）
 
----
+`apps/web/.env.local` を作ってコントラクトアドレスを入れます。
 
-**Built with ❤️ by the Zama team**
+```bash
+cd apps/web
+cp .env.example .env.local
+# VITE_WEREWOLF_ADDRESS を <CONTRACT_ADDRESS> に更新
+npm i
+npm run dev
+```
+
+## Vercel
+
+- Vercel の Environment Variables に `VITE_WEREWOLF_ADDRESS=<CONTRACT_ADDRESS>` を追加
+
+## Sepolia E2E 手順（審査用）
+
+- [docs/sepolia-e2e.md](docs/sepolia-e2e.md)
+
+## Tech
+
+- FHEVM Solidity library + Hardhat plugin

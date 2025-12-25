@@ -1,3 +1,4 @@
+import "dotenv/config";
 import "@fhevm/hardhat-plugin";
 import "@nomicfoundation/hardhat-chai-matchers";
 import "@nomicfoundation/hardhat-ethers";
@@ -10,13 +11,33 @@ import { vars } from "hardhat/config";
 import "solidity-coverage";
 
 import "./tasks/accounts";
-import "./tasks/FHECounter";
 import "./tasks/Werewolf";
 
 // Run 'npx hardhat vars setup' to see the list of variables that need to be set
 
-const MNEMONIC: string = vars.get("MNEMONIC", "test test test test test test test test test test test junk");
-const INFURA_API_KEY: string = vars.get("INFURA_API_KEY", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz");
+function selectedHardhatNetwork(): string | undefined {
+  const idx = process.argv.indexOf("--network");
+  if (idx >= 0) return process.argv[idx + 1];
+  return process.env.HARDHAT_NETWORK;
+}
+
+// Priority: hardhat vars > .env/process.env > safe defaults
+const MNEMONIC: string = vars.get(
+  "MNEMONIC",
+  process.env.MNEMONIC ?? "test test test test test test test test test test test junk",
+);
+const INFURA_API_KEY: string = vars.get("INFURA_API_KEY", process.env.INFURA_API_KEY ?? "");
+const SEPOLIA_RPC_URL: string = vars.get(
+  "SEPOLIA_RPC_URL",
+  process.env.SEPOLIA_RPC_URL ?? (INFURA_API_KEY ? `https://sepolia.infura.io/v3/${INFURA_API_KEY}` : ""),
+);
+
+// Fail fast only when the user explicitly selects Sepolia.
+if (selectedHardhatNetwork() === "sepolia" && !SEPOLIA_RPC_URL) {
+  throw new Error(
+    "Sepolia RPC URL is not configured. Set INFURA_API_KEY or SEPOLIA_RPC_URL via `npx hardhat vars set ...` or in a root .env.",
+  );
+}
 
 const config: HardhatUserConfig = {
   defaultNetwork: "hardhat",
@@ -25,7 +46,7 @@ const config: HardhatUserConfig = {
   },
   etherscan: {
     apiKey: {
-      sepolia: vars.get("ETHERSCAN_API_KEY", ""),
+      sepolia: vars.get("ETHERSCAN_API_KEY", process.env.ETHERSCAN_API_KEY ?? ""),
     },
   },
   gasReporter: {
@@ -56,7 +77,7 @@ const config: HardhatUserConfig = {
         count: 10,
       },
       chainId: 11155111,
-      url: `https://sepolia.infura.io/v3/${INFURA_API_KEY}`,
+      url: SEPOLIA_RPC_URL,
     },
   },
   paths: {
